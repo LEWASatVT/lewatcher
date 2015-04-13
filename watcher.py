@@ -34,7 +34,6 @@ class Checker():
 
         unacceptable = []
         for value, time in ts.json()["data"]:
-            print value
             if value > self.high or value < self.low:
                 unacceptable.append([value, time])
 
