@@ -1,0 +1,19 @@
+[watch-ph]
+host = http://localhost:8080
+site = stroubles1
+medium = water quality
+metric = pH
+low = 7.5
+high = 8.5
+interval = 15
+threshold = 2
+
+[watch-turbidity]
+host = http://localhost:8080
+site = stroubles1
+medium = water quality
+metric = turbidity
+low = 0
+high = 40
+interval = 15
+threshold = 2
