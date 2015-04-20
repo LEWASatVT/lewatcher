@@ -1,10 +1,6 @@
 import requests, ConfigParser, os
 from datetime import timedelta, datetime
 
-triggerparams = 'host site medium metric low high interval threshold'.split()
-triggertypes = [str, str, str, str, float, float, int, int]
-triggertypes = {triggerparams[i]: triggertypes[i] for i in range(len(triggerparams))}
-
 class Config():
     def __init__(self, config="config"):
         c = ConfigParser.RawConfigParser()
@@ -12,13 +8,19 @@ class Config():
         self.triggers = []
 	for s in c.sections():
             if s.startswith("watch-"):
-                t = [triggertypes[o](c.get(s, o)) for o in triggerparams]
-                self.triggers.append(t)
+                d = dict([(o, c.get(s, o)) for o in c.options(s)])
+                d["name"] = s[6:]
+                self.triggers.append(d)
 
 class Checker():
-    def __init__(self, host, site, medium, metric, low, high, interval, threshold):
-        for p in triggerparams:
-            setattr(self, p, locals().get(p))
+
+    triggerparams = 'name host site medium metric low high interval threshold'.split()
+    triggertypes = [str, str, str, str, str, float, float, int, int]
+
+    def __init__(self, d):
+        tt = {self.triggerparams[i]: self.triggertypes[i] for i in range(len(self.triggerparams))}
+        for p in self.triggerparams:
+            setattr(self, p, tt[p](d.get(p)))
 
     def gethalbyname(self, data, name):
         for d in data:
@@ -39,11 +41,16 @@ class Checker():
 
         if len(unacceptable) > self.threshold:
             #TODO: configurable actions
-            print "{0} ({1}) not within [{2}, {3}]! marcusw".format(
+            print "{0} ({1}) not within [{2}, {3}]!".format(
                 self.metric, self.medium, self.low, self.high)
             print unacceptable
 
+    def notify(self):
+        storefn = os.path.abspath()
+        if os.path.isfile(storefn):
+            last = open(os.path.abspath(config), 'r').readline().strip()
+
 c = Config()
-for targs in c.triggers:
-    t = Checker(*targs)
+for trigspec in c.triggers:
+    t = Checker(trigspec)
     t.check()

@@ -7,6 +7,7 @@ low = 7.5
 high = 8.5
 interval = 15
 threshold = 2
+reset = 180
 
 [watch-turbidity]
 host = http://localhost:8080
@@ -17,3 +18,4 @@ low = 0
 high = 40
 interval = 15
 threshold = 2
+reset = 180
