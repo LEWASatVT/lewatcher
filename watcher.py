@@ -14,8 +14,8 @@ class Config():
 
 class Checker():
 
-    triggerparams = 'name host site medium metric low high interval threshold reset email irc'.split()
-    triggertypes = [str, str, str, str, str, float, float, int, int, int, str, str]
+    triggerparams = 'name host site medium metric low high interval threshold reset email irc sguser sgpass'.split()
+    triggertypes = [str, str, str, str, str, float, float, int, int, int, str, str, str, str]
 
     def __init__(self, d):
         tt = {self.triggerparams[i]: self.triggertypes[i] for i in range(len(self.triggerparams))}
@@ -38,7 +38,7 @@ class Checker():
         unacceptable = []
         for value, time in data[-self.interval:]:
             if value > self.high or value < self.low:
-                unacceptable.append([value, time])
+                unacceptable.append([time, value])
 
         if len(unacceptable) > self.threshold:
             if not self.inevent():
@@ -71,14 +71,16 @@ class Checker():
         print unacceptable
         if self.email != "":
             import sendgrid
-            sg = sendgrid.SendGridClient(self.sguser, self.sgpass)
+            sg = sendgrid.SendGridClient(self.sguser, self.sgpass, raise_errors=True)
+            text = "Recent samples outside of threshold range:\n\n"
+            text += "\n".join([t + ": " + str(v) for t,v in unacceptable]) + "\n\n"
             sg.send(
                 sendgrid.Mail(**{
                     "to": self.email.split(","),
-                    #"from": "marcus@wanners.net",
-                    "subject": "LEWAS {0} Event: Outside of range ({1},{2})".format(
+                    "from_email": "marcus@wanners.net",
+                    "subject": "LEWAS {0} Event: Samples outside of range ({1}, {2})".format(
                         self.metric, self.low, self.high),
-                    "text": str(unacceptable)
+                    "text": text,
                 })
             )
 
