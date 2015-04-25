@@ -1,5 +1,6 @@
 import requests, ConfigParser, os
 from datetime import timedelta, datetime
+import dateutil.parser, pytz
 
 class Config():
     def __init__(self, config="config"):
@@ -31,7 +32,7 @@ class Checker():
         r = requests.get(self.host+"/sites/"+self.site+"/metricgroups")
         d = self.gethalbyname(r.json(), self.medium)["_embedded"]
         tsurl = self.gethalbyname(d["metrics"], self.metric)["_links"]["timeseries"]["href"]
-        timestamp = (datetime.now()-timedelta(minutes=self.reset)).isoformat()
+        timestamp = (datetime.now()-timedelta(minutes=self.interval)).isoformat()
         ts = requests.get(self.host+tsurl, params={'since': timestamp})
         data = ts.json()["data"]
 
@@ -42,28 +43,31 @@ class Checker():
 
         if len(unacceptable) > self.threshold:
             if not self.inevent():
-                self.seteventstatus(True)
                 self.notify(unacceptable)
-        elif self.inevent():
-            reset = True
-            for value, time in data[-self.interval:]:
-                if value > self.high or value < self.low:
-                    reset = False
-                    break
-            if reset:
-                self.seteventstatus(False)
+            self.seteventstatus(dateutil.parser.parse(unacceptable[-1][0]))
 
     def inevent(self):
         eventfn = self.name+"-inevent"
-        return os.path.isfile(eventfn)
-
-    def seteventstatus(self, inevent):
-        eventfn = self.name+"-inevent"
-        if inevent:
-            open(eventfn, "w").close()
+        if not os.path.isfile(eventfn):
+            return False
+        last = dateutil.parser.parse(open(eventfn, 'r').readline().strip())
+        delta = dateutil.parser.parse(datetime.now(pytz.utc).isoformat())-last
+        if delta >= timedelta(minutes=self.reset):
+            self.seteventstatus(False)
+            return False
         else:
-            if self.inevent():
+            return True
+
+    def seteventstatus(self, status):
+        #status is either False, or the unix timestamp of the most recent unacceptable reading
+        eventfn = self.name+"-inevent"
+        if status:
+            open(eventfn, "w").write(str(status)+"\n")
+        else:
+            try:
                 os.remove(eventfn)
+            except OSError:
+                pass
 
     def notify(self, unacceptable):
         print "{0} ({1}) not within [{2}, {3}]! {4}".format(
@@ -76,8 +80,9 @@ class Checker():
             text += "\n".join([t + ": " + str(v) for t,v in unacceptable]) + "\n\n"
             sg.send(
                 sendgrid.Mail(**{
-                    "to": self.email.split(","),
-                    "from_email": "marcus@wanners.net",
+                    "to": [e.strip() for e in self.email.split(",")],
+                    "from_email": "lewatcher@lewaspedia.enge.vt.edu",
+                    "from_name": "LEWatcher",
                     "subject": "LEWAS {0} Event: Samples outside of range ({1}, {2})".format(
                         self.metric, self.low, self.high),
                     "text": text,
