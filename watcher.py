@@ -41,8 +41,9 @@ class Checker():
             if value > self.high or value < self.low:
                 unacceptable.append([time, value])
 
-        if len(unacceptable) > self.threshold:
-            if not self.inevent():
+        inevent = self.inevent()
+        if len(unacceptable) >= self.threshold:
+            if not inevent:
                 self.notify(unacceptable)
             self.seteventstatus(dateutil.parser.parse(unacceptable[-1][0]))
 
