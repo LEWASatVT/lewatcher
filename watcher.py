@@ -79,6 +79,8 @@ class Checker():
             sg = sendgrid.SendGridClient(self.sguser, self.sgpass, raise_errors=True)
             text = "Recent samples outside of threshold range:\n\n"
             text += "\n".join([t + ": " + str(v) for t,v in unacceptable]) + "\n\n"
+            text += "To see the conditions leading up to this event, and to watch it happen live, "
+            text += "visit: http://www.lewas.centers.vt.edu/dataviewer/single_graph.html\n\n"
             sg.send(
                 sendgrid.Mail(**{
                     "to": [e.strip() for e in self.email.split(",")],
