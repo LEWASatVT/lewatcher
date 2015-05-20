@@ -45,8 +45,11 @@ class Checker():
         inevent = self.inevent()
         if len(unacceptable) >= self.threshold:
             if not inevent:
-                self.notify(unacceptable)
-            self.seteventstatus(dateutil.parser.parse(unacceptable[-1][0]))
+                try:
+                    self.notify(unacceptable)
+                except:
+                    traceback.print_exc()
+            self.seteventstatus(dateutil.parser.parse(unacceptable[0][0]))
 
     def inevent(self):
         eventfn = self.name+"-inevent"
