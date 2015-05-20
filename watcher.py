@@ -1,6 +1,7 @@
-import requests, ConfigParser, os
+import requests, ConfigParser, os, traceback
 from datetime import timedelta, datetime
 import dateutil.parser, pytz
+import urllib2
 
 class Config():
     def __init__(self, config="config"):
@@ -81,8 +82,7 @@ class Checker():
             text += "\n".join([t + ": " + str(v) for t,v in unacceptable]) + "\n\n"
             text += "To see the conditions leading up to this event, and to watch it happen live, "
             text += "visit: http://www.lewas.centers.vt.edu/dataviewer/single_graph.html\n\n"
-            sg.send(
-                sendgrid.Mail(**{
+            email = sendgrid.Mail(**{
                     "to": [e.strip() for e in self.email.split(",")],
                     "from_email": "lewatcher@lewaspedia.enge.vt.edu",
                     "from_name": "LEWatcher",
@@ -90,7 +90,13 @@ class Checker():
                         self.metric, self.low, self.high),
                     "text": text,
                 })
-            )
+            try:
+                image = urllib2.urlopen('http://128.173.156.152:3580/nph-jpeg.cgi').read()
+                email.add_attachment_stream(
+                    'camera-'+datetime.now().isoformat()+'.jpg', image)
+            except:
+                traceback.print_exc()
+            sg.send(email)
 
 
 c = Config()
