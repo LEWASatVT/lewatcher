@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 import subprocess, shlex, os, ConfigParser, time
 
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
